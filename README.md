@@ -6,10 +6,48 @@
 
 This means in an `AnyMap` you may store zero or one value for every type.
 
-## Instructions
+The separate `CloneAny*` traits mean the additional `Send` / `Sync` bounds are enforced on all types in the map, which is an ergonomic hit from the `anymap` crate. This is a workaround to avoid this warning: https://github.com/rust-lang/rust/issues/51443
+
+## Usage
+
+Add the following to `Cargo.toml`:
 
 ```toml
 anymap = "0.13.0"
+```
+
+In code, use one of the following map types:
+
+```rust
+use anymap::AnyMap; // Map<dyn Any>
+
+let mut data = AnyMap::new();
+assert_eq!(data.get(), None::<&i32>);
+
+data.insert(42i32);
+assert_eq!(data.get(), Some(&42i32));
+
+data.remove::<i32>();
+assert_eq!(data.get::<i32>(), None);
+
+#[derive(Clone, PartialEq, Debug)]
+struct Foo {
+    value: String,
+}
+
+assert_eq!(data.get::<Foo>(), None);
+data.insert(Foo {
+    value: format!("foo"),
+});
+assert_eq!(
+    data.get(),
+    Some(&Foo {
+        value: format!("foo")
+    })
+);
+
+data.get_mut::<Foo>().map(|foo| foo.value.push('t'));
+assert_eq!(&*data.get::<Foo>().unwrap().value, "foot");
 ```
 
 ## `unsafe` Code
