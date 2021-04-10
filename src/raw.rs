@@ -274,6 +274,8 @@ impl<A: ?Sized + UncheckedAnyExt> RawMap<A> {
     /// present in the map, that value is returned. Otherwise, None is
     /// returned.
     ///
+    /// # Safety
+    ///
     /// It is the caller’s responsibility to ensure that the key corresponds
     /// with the type ID of the value. If they do not, memory safety may be
     /// violated.
@@ -356,6 +358,8 @@ impl<'a, A: ?Sized + UncheckedAnyExt> Entry<'a, A> {
     /// Ensures a value is in the entry by inserting the default if empty, and
     /// returns a mutable reference to the value in the entry.
     ///
+    /// # Safety
+    ///
     /// It is the caller’s responsibility to ensure that the key of the entry
     /// corresponds with the type ID of `value`. If they do not, memory
     /// safety may be violated.
@@ -370,6 +374,8 @@ impl<'a, A: ?Sized + UncheckedAnyExt> Entry<'a, A> {
     /// Ensures a value is in the entry by inserting the result of the default
     /// function if empty, and returns a mutable reference to the value in
     /// the entry.
+    ///
+    /// # Safety
     ///
     /// It is the caller’s responsibility to ensure that the key of the entry
     /// corresponds with the type ID of `value`. If they do not, memory
@@ -405,6 +411,8 @@ impl<'a, A: ?Sized + UncheckedAnyExt> OccupiedEntry<'a, A> {
 
     /// Sets the value of the entry, and returns the entry's old value.
     ///
+    /// # Safety
+    ///
     /// It is the caller’s responsibility to ensure that the key of the entry
     /// corresponds with the type ID of `value`. If they do not, memory
     /// safety may be violated.
@@ -423,6 +431,8 @@ impl<'a, A: ?Sized + UncheckedAnyExt> OccupiedEntry<'a, A> {
 impl<'a, A: ?Sized + UncheckedAnyExt> VacantEntry<'a, A> {
     /// Sets the value of the entry with the VacantEntry's key,
     /// and returns a mutable reference to it
+    ///
+    /// # Safety
     ///
     /// It is the caller’s responsibility to ensure that the key of the entry
     /// corresponds with the type ID of `value`. If they do not, memory

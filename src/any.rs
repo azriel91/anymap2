@@ -141,7 +141,8 @@ macro_rules! impl_clone {
     };
 }
 
-#[allow(missing_docs)] // Bogus warning (it’s not public outside the crate), ☹
+// Not public outside the crate.
+#[allow(missing_docs, clippy::missing_safety_doc)]
 pub trait UncheckedAnyExt: Any {
     unsafe fn downcast_ref_unchecked<T: Any>(&self) -> &T;
     unsafe fn downcast_mut_unchecked<T: Any>(&mut self) -> &mut T;
