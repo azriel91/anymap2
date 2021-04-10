@@ -1,6 +1,8 @@
 //! This crate provides the `AnyMap` type, a safe and convenient store for one value of each type.
 
 #![warn(missing_docs, unused_results)]
+#![allow(unused_doc_comments)]
+
 //#![deny(warnings)]
 use std::any::TypeId;
 use std::marker::PhantomData;
@@ -344,7 +346,7 @@ impl<'a, A: ?Sized + UncheckedAnyExt, V: IntoBox<A>> VacantEntry<'a, A, V> {
 
 #[cfg(test)]
 mod tests {
-    use crate::any::{Any, CloneAny};
+    use crate::any::{Any, CloneAny, CloneAnySend, CloneAnySendSync, CloneAnySync};
     use crate::{AnyMap, Entry, Map};
 
     #[derive(Clone, Debug, PartialEq)]
@@ -473,17 +475,17 @@ mod tests {
         assert_debug::<Map<dyn Any + Send>>();
         assert_debug::<Map<dyn Any + Sync>>();
         assert_debug::<Map<dyn Any + Send + Sync>>();
-        assert_send::<Map<dyn CloneAny + Send>>();
-        assert_send::<Map<dyn CloneAny + Send + Sync>>();
-        assert_sync::<Map<dyn CloneAny + Sync>>();
-        assert_sync::<Map<dyn CloneAny + Send + Sync>>();
-        assert_clone::<Map<dyn CloneAny + Send>>();
-        assert_clone::<Map<dyn CloneAny + Send + Sync>>();
-        assert_clone::<Map<dyn CloneAny + Sync>>();
-        assert_clone::<Map<dyn CloneAny + Send + Sync>>();
+        assert_send::<Map<dyn CloneAnySend + Send>>();
+        assert_send::<Map<dyn CloneAnySendSync + Send + Sync>>();
+        assert_sync::<Map<dyn CloneAnySync + Sync>>();
+        assert_sync::<Map<dyn CloneAnySendSync + Send + Sync>>();
+        assert_clone::<Map<dyn CloneAnySend + Send>>();
+        assert_clone::<Map<dyn CloneAnySendSync + Send + Sync>>();
+        assert_clone::<Map<dyn CloneAnySync + Sync>>();
+        assert_clone::<Map<dyn CloneAnySendSync + Send + Sync>>();
         assert_debug::<Map<dyn CloneAny>>();
-        assert_debug::<Map<dyn CloneAny + Send>>();
-        assert_debug::<Map<dyn CloneAny + Sync>>();
-        assert_debug::<Map<dyn CloneAny + Send + Sync>>();
+        assert_debug::<Map<dyn CloneAnySend + Send>>();
+        assert_debug::<Map<dyn CloneAnySync + Sync>>();
+        assert_debug::<Map<dyn CloneAnySendSync + Send + Sync>>();
     }
 }

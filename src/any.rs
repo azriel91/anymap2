@@ -1,7 +1,8 @@
 //! The different types of `Any` for use in a map.
 //!
-//! This stuff is all based on `std::any`, but goes a little further, with `CloneAny` being a
-//! cloneable `Any` and with the `Send` and `Sync` bounds possible on both `Any` and `CloneAny`.
+//! This is based on `std::any`, but goes a little further, with `CloneAny` being a
+//! cloneable `Any`. `CloneAnySend`, `CloneAnySync`, and `CloneAnySendSync` further
+//! retrict what can be placed in the map with the `Send` and `Sync` bounds.
 
 use std::any::Any as StdAny;
 use std::fmt;
@@ -10,21 +11,6 @@ use std::fmt;
 pub trait CloneToAny {
     /// Clone `self` into a new `Box<CloneAny>` object.
     fn clone_to_any(&self) -> Box<dyn CloneAny>;
-
-    /// Clone `self` into a new `Box<CloneAny + Send>` object.
-    fn clone_to_any_send(&self) -> Box<dyn CloneAny + Send>
-    where
-        Self: Send;
-
-    /// Clone `self` into a new `Box<CloneAny + Sync>` object.
-    fn clone_to_any_sync(&self) -> Box<dyn CloneAny + Sync>
-    where
-        Self: Sync;
-
-    /// Clone `self` into a new `Box<CloneAny + Send + Sync>` object.
-    fn clone_to_any_send_sync(&self) -> Box<dyn CloneAny + Send + Sync>
-    where
-        Self: Send + Sync;
 }
 
 impl<T: Any + Clone> CloneToAny for T {
@@ -32,28 +18,43 @@ impl<T: Any + Clone> CloneToAny for T {
     fn clone_to_any(&self) -> Box<dyn CloneAny> {
         Box::new(self.clone())
     }
+}
 
+#[doc(hidden)]
+pub trait CloneToAnySend: Send {
+    /// Clone `self` into a new `Box<CloneAnySend + Send>` object.
+    fn clone_to_any_send(&self) -> Box<dyn CloneAnySend + Send>;
+}
+
+impl<T: Any + Send + Clone> CloneToAnySend for T {
     #[inline]
-    fn clone_to_any_send(&self) -> Box<dyn CloneAny + Send>
-    where
-        Self: Send,
-    {
+    fn clone_to_any_send(&self) -> Box<dyn CloneAnySend + Send> {
         Box::new(self.clone())
     }
+}
 
+#[doc(hidden)]
+pub trait CloneToAnySync: Sync {
+    /// Clone `self` into a new `Box<CloneAnySync + Sync>` object.
+    fn clone_to_any_sync(&self) -> Box<dyn CloneAnySync + Sync>;
+}
+
+impl<T: Any + Sync + Clone> CloneToAnySync for T {
     #[inline]
-    fn clone_to_any_sync(&self) -> Box<dyn CloneAny + Sync>
-    where
-        Self: Sync,
-    {
+    fn clone_to_any_sync(&self) -> Box<dyn CloneAnySync + Sync> {
         Box::new(self.clone())
     }
+}
 
+#[doc(hidden)]
+pub trait CloneToAnySendSync: Send + Sync {
+    /// Clone `self` into a new `Box<CloneAnySendSync + Send + Sync>` object.
+    fn clone_to_any_send_sync(&self) -> Box<dyn CloneAnySendSync + Send + Sync>;
+}
+
+impl<T: Any + Send + Sync + Clone> CloneToAnySendSync for T {
     #[inline]
-    fn clone_to_any_send_sync(&self) -> Box<dyn CloneAny + Send + Sync>
-    where
-        Self: Send + Sync,
-    {
+    fn clone_to_any_send_sync(&self) -> Box<dyn CloneAnySendSync + Send + Sync> {
         Box::new(self.clone())
     }
 }
@@ -64,6 +65,24 @@ macro_rules! define {
         ///
         /// Every type with no non-`'static` references implements `Any`.
         define!(CloneAny remainder);
+    };
+    (CloneAnySend) => {
+        /// A type to emulate dynamic typing.
+        ///
+        /// Every type with no non-`'static` references implements `Any`.
+        define!(CloneAnySend remainder);
+    };
+    (CloneAnySync) => {
+        /// A type to emulate dynamic typing.
+        ///
+        /// Every type with no non-`'static` references implements `Any`.
+        define!(CloneAnySync remainder);
+    };
+    (CloneAnySendSync) => {
+        /// A type to emulate dynamic typing.
+        ///
+        /// Every type with no non-`'static` references implements `Any`.
+        define!(CloneAnySendSync remainder);
     };
     (Any) => {
         /// A type to emulate dynamic typing with cloning.
@@ -88,6 +107,21 @@ macro_rules! define {
         /// See also [`Any`](trait.Any.html) for a version without the `Clone` requirement.
         pub trait CloneAny: Any + CloneToAny { }
         impl<T: StdAny + Clone> CloneAny for T { }
+    };
+    (CloneAnySend trait) => {
+        /// See also [`Any`](trait.Any.html) for a version without the `Clone + Send` requirements.
+        pub trait CloneAnySend: Any + CloneToAnySend { }
+        impl<T: StdAny + Send + Clone> CloneAnySend for T { }
+    };
+    (CloneAnySync trait) => {
+        /// See also [`Any`](trait.Any.html) for a version without the `Clone + Sync` requirements.
+        pub trait CloneAnySync: Any + CloneToAnySync { }
+        impl<T: StdAny + Sync + Clone> CloneAnySync for T { }
+    };
+    (CloneAnySendSync trait) => {
+        /// See also [`Any`](trait.Any.html) for a version without the `Clone + Send + Sync` requirements.
+        pub trait CloneAnySendSync: Any + CloneToAnySendSync { }
+        impl<T: StdAny + Send + Sync + Clone> CloneAnySendSync for T { }
     };
     (Any trait) => {
         /// See also [`CloneAny`](trait.CloneAny.html) for a cloneable version of this trait.
@@ -162,12 +196,15 @@ implement!(Any, + Send);
 implement!(Any, + Sync);
 implement!(Any, + Send + Sync);
 implement!(CloneAny,);
-implement!(CloneAny, + Send);
-implement!(CloneAny, + Sync);
-implement!(CloneAny, + Send + Sync);
+implement!(CloneAnySend, + Send);
+implement!(CloneAnySync, + Sync);
+implement!(CloneAnySendSync, + Send + Sync);
 
 define!(CloneAny);
+define!(CloneAnySend);
+define!(CloneAnySync);
+define!(CloneAnySendSync);
 impl_clone!(dyn CloneAny, clone_to_any);
-impl_clone!((dyn CloneAny + Send), clone_to_any_send);
-impl_clone!((dyn CloneAny + Sync), clone_to_any_sync);
-impl_clone!((dyn CloneAny + Send + Sync), clone_to_any_send_sync);
+impl_clone!((dyn CloneAnySend + Send), clone_to_any_send);
+impl_clone!((dyn CloneAnySync + Sync), clone_to_any_sync);
+impl_clone!((dyn CloneAnySendSync + Send + Sync), clone_to_any_send_sync);
