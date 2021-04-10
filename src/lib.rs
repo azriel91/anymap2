@@ -5,8 +5,8 @@
 use std::any::TypeId;
 use std::marker::PhantomData;
 
+use crate::any::{Any, IntoBox, UncheckedAnyExt};
 use crate::raw::RawMap;
-use crate::any::{UncheckedAnyExt, IntoBox, Any};
 
 macro_rules! impl_common_methods {
     (
@@ -18,9 +18,7 @@ macro_rules! impl_common_methods {
             /// Create an empty collection.
             #[inline]
             pub fn new() -> $t<A> {
-                $t {
-                    $field: $new,
-                }
+                $t { $field: $new }
             }
 
             /// Creates an empty collection with the given initial capacity.
@@ -82,7 +80,7 @@ macro_rules! impl_common_methods {
                 $t::new()
             }
         }
-    }
+    };
 }
 
 pub mod any;
@@ -125,7 +123,10 @@ pub struct Map<A: ?Sized + UncheckedAnyExt = dyn Any> {
 }
 
 // #[derive(Clone)] would want A to implement Clone, but in reality it’s only Box<A> that can.
-impl<A: ?Sized + UncheckedAnyExt> Clone for Map<A> where Box<A>: Clone {
+impl<A: ?Sized + UncheckedAnyExt> Clone for Map<A>
+where
+    Box<A>: Clone,
+{
     #[inline]
     fn clone(&self) -> Map<A> {
         Map {
@@ -154,7 +155,8 @@ impl<A: ?Sized + UncheckedAnyExt> Map<A> {
     /// Returns a reference to the value stored in the collection for the type `T`, if it exists.
     #[inline]
     pub fn get<T: IntoBox<A>>(&self) -> Option<&T> {
-        self.raw.get(&TypeId::of::<T>())
+        self.raw
+            .get(&TypeId::of::<T>())
             .map(|any| unsafe { any.downcast_ref_unchecked::<T>() })
     }
 
@@ -162,7 +164,8 @@ impl<A: ?Sized + UncheckedAnyExt> Map<A> {
     /// if it exists.
     #[inline]
     pub fn get_mut<T: IntoBox<A>>(&mut self) -> Option<&mut T> {
-        self.raw.get_mut(&TypeId::of::<T>())
+        self.raw
+            .get_mut(&TypeId::of::<T>())
             .map(|any| unsafe { any.downcast_mut_unchecked::<T>() })
     }
 
@@ -172,7 +175,8 @@ impl<A: ?Sized + UncheckedAnyExt> Map<A> {
     #[inline]
     pub fn insert<T: IntoBox<A>>(&mut self, value: T) -> Option<T> {
         unsafe {
-            self.raw.insert(TypeId::of::<T>(), value.into_box())
+            self.raw
+                .insert(TypeId::of::<T>(), value.into_box())
                 .map(|any| *any.downcast_unchecked::<T>())
         }
     }
@@ -181,7 +185,8 @@ impl<A: ?Sized + UncheckedAnyExt> Map<A> {
     /// returning it if there was one or `None` if there was not.
     #[inline]
     pub fn remove<T: IntoBox<A>>(&mut self) -> Option<T> {
-        self.raw.remove(&TypeId::of::<T>())
+        self.raw
+            .remove(&TypeId::of::<T>())
             .map(|any| *unsafe { any.downcast_unchecked::<T>() })
     }
 
@@ -339,16 +344,23 @@ impl<'a, A: ?Sized + UncheckedAnyExt, V: IntoBox<A>> VacantEntry<'a, A, V> {
 
 #[cfg(test)]
 mod tests {
-    use crate::{Map, AnyMap, Entry};
     use crate::any::{Any, CloneAny};
+    use crate::{AnyMap, Entry, Map};
 
-    #[derive(Clone, Debug, PartialEq)] struct A(i32);
-    #[derive(Clone, Debug, PartialEq)] struct B(i32);
-    #[derive(Clone, Debug, PartialEq)] struct C(i32);
-    #[derive(Clone, Debug, PartialEq)] struct D(i32);
-    #[derive(Clone, Debug, PartialEq)] struct E(i32);
-    #[derive(Clone, Debug, PartialEq)] struct F(i32);
-    #[derive(Clone, Debug, PartialEq)] struct J(i32);
+    #[derive(Clone, Debug, PartialEq)]
+    struct A(i32);
+    #[derive(Clone, Debug, PartialEq)]
+    struct B(i32);
+    #[derive(Clone, Debug, PartialEq)]
+    struct C(i32);
+    #[derive(Clone, Debug, PartialEq)]
+    struct D(i32);
+    #[derive(Clone, Debug, PartialEq)]
+    struct E(i32);
+    #[derive(Clone, Debug, PartialEq)]
+    struct F(i32);
+    #[derive(Clone, Debug, PartialEq)]
+    struct J(i32);
 
     macro_rules! test_entry {
         ($name:ident, $init:ty) => {
@@ -373,7 +385,6 @@ mod tests {
                 assert_eq!(map.get::<A>().unwrap(), &A(100));
                 assert_eq!(map.len(), 6);
 
-
                 // Existing key (update)
                 match map.entry::<B>() {
                     Entry::Vacant(_) => unreachable!(),
@@ -386,7 +397,6 @@ mod tests {
                 assert_eq!(map.get::<B>().unwrap(), &B(200));
                 assert_eq!(map.len(), 6);
 
-
                 // Existing key (remove)
                 match map.entry::<C>() {
                     Entry::Vacant(_) => unreachable!(),
@@ -396,7 +406,6 @@ mod tests {
                 }
                 assert_eq!(map.get::<C>(), None);
                 assert_eq!(map.len(), 5);
-
 
                 // Inexistent key (insert)
                 match map.entry::<J>() {
@@ -418,7 +427,7 @@ mod tests {
                 assert_eq!(map.get::<C>().unwrap(), &C(301));
                 assert_eq!(map.len(), 7);
             }
-        }
+        };
     }
 
     test_entry!(test_entry_any, AnyMap);
@@ -452,10 +461,10 @@ mod tests {
 
     #[test]
     fn test_varieties() {
-        fn assert_send<T: Send>() { }
-        fn assert_sync<T: Sync>() { }
-        fn assert_clone<T: Clone>() { }
-        fn assert_debug<T: ::std::fmt::Debug>() { }
+        fn assert_send<T: Send>() {}
+        fn assert_sync<T: Sync>() {}
+        fn assert_clone<T: Clone>() {}
+        fn assert_debug<T: ::std::fmt::Debug>() {}
         assert_send::<Map<dyn Any + Send>>();
         assert_send::<Map<dyn Any + Send + Sync>>();
         assert_sync::<Map<dyn Any + Sync>>();

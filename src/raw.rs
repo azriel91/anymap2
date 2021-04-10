@@ -6,7 +6,7 @@ use std::any::TypeId;
 use std::borrow::Borrow;
 use std::collections::hash_map::{self, HashMap};
 use std::hash::Hash;
-use std::hash::{Hasher, BuildHasherDefault};
+use std::hash::{BuildHasherDefault, Hasher};
 #[cfg(test)]
 use std::mem;
 use std::ops::{Index, IndexMut};
@@ -23,14 +23,20 @@ impl Hasher for TypeIdHasher {
     fn write(&mut self, bytes: &[u8]) {
         // This expects to receive one and exactly one 64-bit value
         assert!(bytes.len() == 8);
-        self.value = u64::from(bytes[0])       | u64::from(bytes[1]) << 8  |
-                     u64::from(bytes[2]) << 16 | u64::from(bytes[3]) << 24 |
-                     u64::from(bytes[4]) << 32 | u64::from(bytes[5]) << 40 |
-                     u64::from(bytes[6]) << 48 | u64::from(bytes[7]) << 56;
+        self.value = u64::from(bytes[0])
+            | u64::from(bytes[1]) << 8
+            | u64::from(bytes[2]) << 16
+            | u64::from(bytes[3]) << 24
+            | u64::from(bytes[4]) << 32
+            | u64::from(bytes[5]) << 40
+            | u64::from(bytes[6]) << 48
+            | u64::from(bytes[7]) << 56;
     }
 
     #[inline]
-    fn finish(&self) -> u64 { self.value }
+    fn finish(&self) -> u64 {
+        self.value
+    }
 }
 
 #[test]
@@ -38,7 +44,9 @@ fn type_id_hasher() {
     fn verify_hashing_with(type_id: TypeId) {
         let mut hasher = TypeIdHasher::default();
         type_id.hash(&mut hasher);
-        assert_eq!(hasher.finish(), unsafe { mem::transmute::<TypeId, u64>(type_id) });
+        assert_eq!(hasher.finish(), unsafe {
+            mem::transmute::<TypeId, u64>(type_id)
+        });
     }
     // Pick a variety of types, just to demonstrate it’s all sane. Normal, zero-sized, unsized, &c.
     verify_hashing_with(TypeId::of::<usize>());
@@ -61,7 +69,10 @@ pub struct RawMap<A: ?Sized + UncheckedAnyExt = dyn Any> {
 }
 
 // #[derive(Clone)] would want A to implement Clone, but in reality it’s only Box<A> that can.
-impl<A: ?Sized + UncheckedAnyExt> Clone for RawMap<A> where Box<A>: Clone {
+impl<A: ?Sized + UncheckedAnyExt> Clone for RawMap<A>
+where
+    Box<A>: Clone,
+{
     #[inline]
     fn clone(&self) -> RawMap<A> {
         RawMap {
@@ -83,11 +94,20 @@ pub struct Iter<'a, A: ?Sized + UncheckedAnyExt> {
 }
 impl<'a, A: ?Sized + UncheckedAnyExt> Iterator for Iter<'a, A> {
     type Item = &'a A;
-    #[inline] fn next(&mut self) -> Option<&'a A> { self.inner.next().map(|x| &**x.1) }
-    #[inline] fn size_hint(&self) -> (usize, Option<usize>) { self.inner.size_hint() }
+    #[inline]
+    fn next(&mut self) -> Option<&'a A> {
+        self.inner.next().map(|x| &**x.1)
+    }
+    #[inline]
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.inner.size_hint()
+    }
 }
 impl<'a, A: ?Sized + UncheckedAnyExt> ExactSizeIterator for Iter<'a, A> {
-    #[inline] fn len(&self) -> usize { self.inner.len() }
+    #[inline]
+    fn len(&self) -> usize {
+        self.inner.len()
+    }
 }
 
 /// `RawMap` mutable iterator.
@@ -96,11 +116,20 @@ pub struct IterMut<'a, A: ?Sized + UncheckedAnyExt> {
 }
 impl<'a, A: ?Sized + UncheckedAnyExt> Iterator for IterMut<'a, A> {
     type Item = &'a mut A;
-    #[inline] fn next(&mut self) -> Option<&'a mut A> { self.inner.next().map(|x| &mut **x.1) }
-    #[inline] fn size_hint(&self) -> (usize, Option<usize>) { self.inner.size_hint() }
+    #[inline]
+    fn next(&mut self) -> Option<&'a mut A> {
+        self.inner.next().map(|x| &mut **x.1)
+    }
+    #[inline]
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.inner.size_hint()
+    }
 }
 impl<'a, A: ?Sized + UncheckedAnyExt> ExactSizeIterator for IterMut<'a, A> {
-    #[inline] fn len(&self) -> usize { self.inner.len() }
+    #[inline]
+    fn len(&self) -> usize {
+        self.inner.len()
+    }
 }
 
 /// `RawMap` move iterator.
@@ -109,11 +138,20 @@ pub struct IntoIter<A: ?Sized + UncheckedAnyExt> {
 }
 impl<A: ?Sized + UncheckedAnyExt> Iterator for IntoIter<A> {
     type Item = Box<A>;
-    #[inline] fn next(&mut self) -> Option<Box<A>> { self.inner.next().map(|x| x.1) }
-    #[inline] fn size_hint(&self) -> (usize, Option<usize>) { self.inner.size_hint() }
+    #[inline]
+    fn next(&mut self) -> Option<Box<A>> {
+        self.inner.next().map(|x| x.1)
+    }
+    #[inline]
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.inner.size_hint()
+    }
 }
 impl<A: ?Sized + UncheckedAnyExt> ExactSizeIterator for IntoIter<A> {
-    #[inline] fn len(&self) -> usize { self.inner.len() }
+    #[inline]
+    fn len(&self) -> usize {
+        self.inner.len()
+    }
 }
 
 /// `RawMap` drain iterator.
@@ -122,11 +160,20 @@ pub struct Drain<'a, A: ?Sized + UncheckedAnyExt> {
 }
 impl<'a, A: ?Sized + UncheckedAnyExt> Iterator for Drain<'a, A> {
     type Item = Box<A>;
-    #[inline] fn next(&mut self) -> Option<Box<A>> { self.inner.next().map(|x| x.1) }
-    #[inline] fn size_hint(&self) -> (usize, Option<usize>) { self.inner.size_hint() }
+    #[inline]
+    fn next(&mut self) -> Option<Box<A>> {
+        self.inner.next().map(|x| x.1)
+    }
+    #[inline]
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.inner.size_hint()
+    }
 }
 impl<'a, A: ?Sized + UncheckedAnyExt> ExactSizeIterator for Drain<'a, A> {
-    #[inline] fn len(&self) -> usize { self.inner.len() }
+    #[inline]
+    fn len(&self) -> usize {
+        self.inner.len()
+    }
 }
 
 impl<A: ?Sized + UncheckedAnyExt> RawMap<A> {
@@ -166,12 +213,8 @@ impl<A: ?Sized + UncheckedAnyExt> RawMap<A> {
     #[inline]
     pub fn entry(&mut self, key: TypeId) -> Entry<A> {
         match self.inner.entry(key) {
-            hash_map::Entry::Occupied(e) => Entry::Occupied(OccupiedEntry {
-                inner: e,
-            }),
-            hash_map::Entry::Vacant(e) => Entry::Vacant(VacantEntry {
-                inner: e,
-            }),
+            hash_map::Entry::Occupied(e) => Entry::Occupied(OccupiedEntry { inner: e }),
+            hash_map::Entry::Vacant(e) => Entry::Vacant(VacantEntry { inner: e }),
         }
     }
 
@@ -181,7 +224,10 @@ impl<A: ?Sized + UncheckedAnyExt> RawMap<A> {
     /// form *must* match those for the key type.
     #[inline]
     pub fn get<Q: ?Sized>(&self, k: &Q) -> Option<&A>
-    where TypeId: Borrow<Q>, Q: Hash + Eq {
+    where
+        TypeId: Borrow<Q>,
+        Q: Hash + Eq,
+    {
         self.inner.get(k).map(|x| &**x)
     }
 
@@ -191,7 +237,10 @@ impl<A: ?Sized + UncheckedAnyExt> RawMap<A> {
     /// form *must* match those for the key type.
     #[inline]
     pub fn contains_key<Q: ?Sized>(&self, k: &Q) -> bool
-    where TypeId: Borrow<Q>, Q: Hash + Eq {
+    where
+        TypeId: Borrow<Q>,
+        Q: Hash + Eq,
+    {
         self.inner.contains_key(k)
     }
 
@@ -201,7 +250,10 @@ impl<A: ?Sized + UncheckedAnyExt> RawMap<A> {
     /// form *must* match those for the key type.
     #[inline]
     pub fn get_mut<Q: ?Sized>(&mut self, k: &Q) -> Option<&mut A>
-    where TypeId: Borrow<Q>, Q: Hash + Eq {
+    where
+        TypeId: Borrow<Q>,
+        Q: Hash + Eq,
+    {
         self.inner.get_mut(k).map(|x| &mut **x)
     }
 
@@ -222,13 +274,19 @@ impl<A: ?Sized + UncheckedAnyExt> RawMap<A> {
     /// form *must* match those for the key type.
     #[inline]
     pub fn remove<Q: ?Sized>(&mut self, k: &Q) -> Option<Box<A>>
-    where TypeId: Borrow<Q>, Q: Hash + Eq {
+    where
+        TypeId: Borrow<Q>,
+        Q: Hash + Eq,
+    {
         self.inner.remove(k)
     }
-
 }
 
-impl<A: ?Sized + UncheckedAnyExt, Q> Index<Q> for RawMap<A> where TypeId: Borrow<Q>, Q: Eq + Hash {
+impl<A: ?Sized + UncheckedAnyExt, Q> Index<Q> for RawMap<A>
+where
+    TypeId: Borrow<Q>,
+    Q: Eq + Hash,
+{
     type Output = A;
 
     #[inline]
@@ -237,7 +295,11 @@ impl<A: ?Sized + UncheckedAnyExt, Q> Index<Q> for RawMap<A> where TypeId: Borrow
     }
 }
 
-impl<A: ?Sized + UncheckedAnyExt, Q> IndexMut<Q> for RawMap<A> where TypeId: Borrow<Q>, Q: Eq + Hash {
+impl<A: ?Sized + UncheckedAnyExt, Q> IndexMut<Q> for RawMap<A>
+where
+    TypeId: Borrow<Q>,
+    Q: Eq + Hash,
+{
     #[inline]
     fn index_mut(&mut self, index: Q) -> &mut A {
         self.get_mut(&index).expect("no entry found for key")
@@ -306,7 +368,7 @@ impl<'a, A: ?Sized + UncheckedAnyExt> OccupiedEntry<'a, A> {
     /// Gets a reference to the value in the entry.
     #[inline]
     pub fn get(&self) -> &A {
-        &**self.inner.get() 
+        &**self.inner.get()
     }
 
     /// Gets a mutable reference to the value in the entry.
