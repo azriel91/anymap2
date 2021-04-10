@@ -1,25 +1,29 @@
-# `AnyMap`, a safe and convenient store for one value of each type
+# 🗺️ `AnyMap`
 
-[![Build Status](https://travis-ci.org/chris-morgan/anymap.svg?branch=master)](https://travis-ci.org/chris-morgan/anymap)
+A map that stores zero or one of each type.
+
+[![Crates.io](https://img.shields.io/crates/v/anymap2.svg)](https://crates.io/crates/anymap2)
+![CI](https://github.com/azriel91/anymap2/workflows/CI/badge.svg)
+[![Coverage Status](https://codecov.io/gh/azriel91/anymap2/branch/main/graph/badge.svg)](https://codecov.io/gh/azriel91/anymap2)
 
 `AnyMap` is a wrapper around a `HashMap<TypeId, Box<Any>>`, exposing a typed interface which is safe and robust.
 
-This means in an `AnyMap` you may store zero or one value for every type.
-
 The separate `CloneAny*` traits mean the additional `Send` / `Sync` bounds are enforced on all types in the map, which is an ergonomic hit from the `anymap` crate. This is a workaround to avoid this warning: https://github.com/rust-lang/rust/issues/51443
+
+**Note:** This is a fork of [`anymap`](https://github.com/chris-morgan/anymap), with the additional constraint that, if any type in the `Map` needs to be `Send` or `Sync` or both, then all types in the `Map` have that constraint. This fork should go away once the above Rust issue is fixed. I just created it so that updating Rust wouldn't inadvertently break the map functionality.
 
 ## Usage
 
 Add the following to `Cargo.toml`:
 
 ```toml
-anymap = "0.13.0"
+anymap2 = "0.13.0"
 ```
 
-In code, use one of the following map types:
+In code:
 
 ```rust
-use anymap::AnyMap; // Map<dyn Any>
+use anymap2::AnyMap; // Map<dyn Any>
 
 let mut data = AnyMap::new();
 assert_eq!(data.get(), None::<&i32>);
