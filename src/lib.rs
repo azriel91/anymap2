@@ -104,7 +104,7 @@ pub mod raw;
 ///   those bounds.
 ///
 /// ```rust
-/// # use anymap::AnyMap;
+/// # use anymap2::AnyMap;
 /// let mut data = AnyMap::new();
 /// assert_eq!(data.get(), None::<&i32>);
 /// data.insert(42i32);
@@ -302,7 +302,7 @@ impl<'a, A: ?Sized + UncheckedAnyExt, V: Default + IntoBox<A>> Entry<'a, A, V> {
     /// # Examples
     ///
     /// ```
-    /// # use anymap::AnyMap;
+    /// # use anymap2::AnyMap;
     /// let mut data = AnyMap::new();
     /// {
     ///     let r = data.entry::<i32>().or_default();
