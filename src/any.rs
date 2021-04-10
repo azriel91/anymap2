@@ -1,11 +1,11 @@
 //! The different types of `Any` for use in a map.
 //!
-//! This is based on `std::any`, but goes a little further, with `CloneAny` being a
-//! cloneable `Any`. `CloneAnySend`, `CloneAnySync`, and `CloneAnySendSync` further
-//! retrict what can be placed in the map with the `Send` and `Sync` bounds.
+//! This is based on `std::any`, but goes a little further, with `CloneAny`
+//! being a cloneable `Any`. `CloneAnySend`, `CloneAnySync`, and
+//! `CloneAnySendSync` further retrict what can be placed in the map with the
+//! `Send` and `Sync` bounds.
 
-use std::any::Any as StdAny;
-use std::fmt;
+use std::{any::Any as StdAny, fmt};
 
 #[doc(hidden)]
 pub trait CloneToAny {

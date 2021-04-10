@@ -6,8 +6,7 @@ extern crate test;
 
 use anymap::AnyMap;
 
-use test::black_box;
-use test::Bencher;
+use test::{black_box, Bencher};
 
 #[bench]
 fn insertion(b: &mut Bencher) {
@@ -62,9 +61,10 @@ macro_rules! big_benchmarks {
     );
 }
 
-// Caution: if the macro does too much (e.g. assertions) this goes from being slow to being
-// *really* slow (like add a minute for each assertion on it) and memory-hungry (like, adding
-// several hundred megabytes to the peak for each assertion).
+// Caution: if the macro does too much (e.g. assertions) this goes from being
+// slow to being *really* slow (like add a minute for each assertion on it) and
+// memory-hungry (like, adding several hundred megabytes to the peak for each
+// assertion).
 big_benchmarks! {
     insert_and_get_on_260_types,
     A0 B0 C0 D0 E0 F0 G0 H0 I0 J0 K0 L0 M0 N0 O0 P0 Q0 R0 S0 T0 U0 V0 W0 X0 Y0 Z0

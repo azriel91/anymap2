@@ -1,14 +1,16 @@
-//! This crate provides the `AnyMap` type, a safe and convenient store for one value of each type.
+//! This crate provides the `AnyMap` type, a safe and convenient store for one
+//! value of each type.
 
 #![warn(missing_docs, unused_results)]
 #![allow(unused_doc_comments)]
 
 //#![deny(warnings)]
-use std::any::TypeId;
-use std::marker::PhantomData;
+use std::{any::TypeId, marker::PhantomData};
 
-use crate::any::{Any, IntoBox, UncheckedAnyExt};
-use crate::raw::RawMap;
+use crate::{
+    any::{Any, IntoBox, UncheckedAnyExt},
+    raw::RawMap,
+};
 
 macro_rules! impl_common_methods {
     (
@@ -31,7 +33,8 @@ macro_rules! impl_common_methods {
                 }
             }
 
-            /// Returns the number of elements the collection can hold without reallocating.
+            /// Returns the number of elements the collection can hold without
+            /// reallocating.
             #[inline]
             pub fn capacity(&self) -> usize {
                 self.$field.capacity()
@@ -69,7 +72,8 @@ macro_rules! impl_common_methods {
                 self.$field.is_empty()
             }
 
-            /// Removes all items from the collection. Keeps the allocated memory for reuse.
+            /// Removes all items from the collection. Keeps the allocated memory for
+            /// reuse.
             #[inline]
             pub fn clear(&mut self) {
                 self.$field.clear()
@@ -88,14 +92,16 @@ macro_rules! impl_common_methods {
 pub mod any;
 pub mod raw;
 
-/// A collection containing zero or one values for any given type and allowing convenient,
-/// type-safe access to those values.
+/// A collection containing zero or one values for any given type and allowing
+/// convenient, type-safe access to those values.
 ///
-/// The type parameter `A` allows you to use a different value type; normally you will want it to
-/// be `anymap::any::Any`, but there are other choices:
+/// The type parameter `A` allows you to use a different value type; normally
+/// you will want it to be `anymap::any::Any`, but there are other choices:
 ///
-/// - If you want the entire map to be cloneable, use `CloneAny` instead of `Any`.
-/// - You can add on `+ Send` and/or `+ Sync` (e.g. `Map<Any + Send>`) to add those bounds.
+/// - If you want the entire map to be cloneable, use `CloneAny` instead of
+///   `Any`.
+/// - You can add on `+ Send` and/or `+ Sync` (e.g. `Map<Any + Send>`) to add
+///   those bounds.
 ///
 /// ```rust
 /// # use anymap::AnyMap;
@@ -112,8 +118,15 @@ pub mod raw;
 /// }
 ///
 /// assert_eq!(data.get::<Foo>(), None);
-/// data.insert(Foo { str: format!("foo") });
-/// assert_eq!(data.get(), Some(&Foo { str: format!("foo") }));
+/// data.insert(Foo {
+///     str: format!("foo"),
+/// });
+/// assert_eq!(
+///     data.get(),
+///     Some(&Foo {
+///         str: format!("foo")
+///     })
+/// );
 /// data.get_mut::<Foo>().map(|foo| foo.str.push('t'));
 /// assert_eq!(&*data.get::<Foo>().unwrap().str, "foot");
 /// ```
@@ -124,7 +137,8 @@ pub struct Map<A: ?Sized + UncheckedAnyExt = dyn Any> {
     raw: RawMap<A>,
 }
 
-// #[derive(Clone)] would want A to implement Clone, but in reality it’s only Box<A> that can.
+// #[derive(Clone)] would want A to implement Clone, but in reality it’s only
+// Box<A> that can.
 impl<A: ?Sized + UncheckedAnyExt> Clone for Map<A>
 where
     Box<A>: Clone,
@@ -139,9 +153,10 @@ where
 
 /// The most common type of `Map`: just using `Any`.
 ///
-/// Why is this a separate type alias rather than a default value for `Map<A>`? `Map::new()`
-/// doesn’t seem to be happy to infer that it should go with the default value.
-/// It’s a bit sad, really. Ah well, I guess this approach will do.
+/// Why is this a separate type alias rather than a default value for `Map<A>`?
+/// `Map::new()` doesn’t seem to be happy to infer that it should go with the
+/// default value. It’s a bit sad, really. Ah well, I guess this approach will
+/// do.
 pub type AnyMap = Map<dyn Any>;
 
 /// Sync version
@@ -154,7 +169,8 @@ impl_common_methods! {
 }
 
 impl<A: ?Sized + UncheckedAnyExt> Map<A> {
-    /// Returns a reference to the value stored in the collection for the type `T`, if it exists.
+    /// Returns a reference to the value stored in the collection for the type
+    /// `T`, if it exists.
     #[inline]
     pub fn get<T: IntoBox<A>>(&self) -> Option<&T> {
         self.raw
@@ -162,8 +178,8 @@ impl<A: ?Sized + UncheckedAnyExt> Map<A> {
             .map(|any| unsafe { any.downcast_ref_unchecked::<T>() })
     }
 
-    /// Returns a mutable reference to the value stored in the collection for the type `T`,
-    /// if it exists.
+    /// Returns a mutable reference to the value stored in the collection for
+    /// the type `T`, if it exists.
     #[inline]
     pub fn get_mut<T: IntoBox<A>>(&mut self) -> Option<&mut T> {
         self.raw
@@ -172,8 +188,8 @@ impl<A: ?Sized + UncheckedAnyExt> Map<A> {
     }
 
     /// Sets the value stored in the collection for the type `T`.
-    /// If the collection already had a value of type `T`, that value is returned.
-    /// Otherwise, `None` is returned.
+    /// If the collection already had a value of type `T`, that value is
+    /// returned. Otherwise, `None` is returned.
     #[inline]
     pub fn insert<T: IntoBox<A>>(&mut self, value: T) -> Option<T> {
         unsafe {
@@ -198,7 +214,8 @@ impl<A: ?Sized + UncheckedAnyExt> Map<A> {
         self.raw.contains_key(&TypeId::of::<T>())
     }
 
-    /// Gets the entry for the given type in the collection for in-place manipulation
+    /// Gets the entry for the given type in the collection for in-place
+    /// manipulation
     #[inline]
     pub fn entry<T: IntoBox<A>>(&mut self) -> Entry<A, T> {
         match self.raw.entry(TypeId::of::<T>()) {
@@ -256,8 +273,8 @@ pub enum Entry<'a, A: ?Sized + UncheckedAnyExt, V: 'a> {
 }
 
 impl<'a, A: ?Sized + UncheckedAnyExt, V: IntoBox<A>> Entry<'a, A, V> {
-    /// Ensures a value is in the entry by inserting the default if empty, and returns
-    /// a mutable reference to the value in the entry.
+    /// Ensures a value is in the entry by inserting the default if empty, and
+    /// returns a mutable reference to the value in the entry.
     #[inline]
     pub fn or_insert(self, default: V) -> &'a mut V {
         match self {
@@ -266,8 +283,9 @@ impl<'a, A: ?Sized + UncheckedAnyExt, V: IntoBox<A>> Entry<'a, A, V> {
         }
     }
 
-    /// Ensures a value is in the entry by inserting the result of the default function if empty,
-    /// and returns a mutable reference to the value in the entry.
+    /// Ensures a value is in the entry by inserting the result of the default
+    /// function if empty, and returns a mutable reference to the value in
+    /// the entry.
     #[inline]
     pub fn or_insert_with<F: FnOnce() -> V>(self, default: F) -> &'a mut V {
         match self {
@@ -315,8 +333,8 @@ impl<'a, A: ?Sized + UncheckedAnyExt, V: IntoBox<A>> OccupiedEntry<'a, A, V> {
         unsafe { self.inner.get_mut().downcast_mut_unchecked() }
     }
 
-    /// Converts the OccupiedEntry into a mutable reference to the value in the entry
-    /// with a lifetime bound to the collection itself
+    /// Converts the OccupiedEntry into a mutable reference to the value in the
+    /// entry with a lifetime bound to the collection itself
     #[inline]
     pub fn into_mut(self) -> &'a mut V {
         unsafe { self.inner.into_mut().downcast_mut_unchecked() }
@@ -346,8 +364,10 @@ impl<'a, A: ?Sized + UncheckedAnyExt, V: IntoBox<A>> VacantEntry<'a, A, V> {
 
 #[cfg(test)]
 mod tests {
-    use crate::any::{Any, CloneAny, CloneAnySend, CloneAnySendSync, CloneAnySync};
-    use crate::{AnyMap, Entry, Map};
+    use crate::{
+        any::{Any, CloneAny, CloneAnySend, CloneAnySendSync, CloneAnySync},
+        AnyMap, Entry, Map,
+    };
 
     #[derive(Clone, Debug, PartialEq)]
     struct A(i32);

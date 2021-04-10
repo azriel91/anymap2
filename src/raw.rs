@@ -2,14 +2,15 @@
 //!
 //! All relevant details are in the `RawMap` struct.
 
-use std::any::TypeId;
-use std::borrow::Borrow;
-use std::collections::hash_map::{self, HashMap};
-use std::hash::Hash;
-use std::hash::{BuildHasherDefault, Hasher};
 #[cfg(test)]
 use std::mem;
-use std::ops::{Index, IndexMut};
+use std::{
+    any::TypeId,
+    borrow::Borrow,
+    collections::hash_map::{self, HashMap},
+    hash::{BuildHasherDefault, Hash, Hasher},
+    ops::{Index, IndexMut},
+};
 
 use crate::any::{Any, UncheckedAnyExt};
 
@@ -48,7 +49,8 @@ fn type_id_hasher() {
             mem::transmute::<TypeId, u64>(type_id)
         });
     }
-    // Pick a variety of types, just to demonstrate it’s all sane. Normal, zero-sized, unsized, &c.
+    // Pick a variety of types, just to demonstrate it’s all sane. Normal,
+    // zero-sized, unsized, &c.
     verify_hashing_with(TypeId::of::<usize>());
     verify_hashing_with(TypeId::of::<()>());
     verify_hashing_with(TypeId::of::<str>());
@@ -58,17 +60,19 @@ fn type_id_hasher() {
 
 /// The raw, underlying form of a `Map`.
 ///
-/// At its essence, this is a wrapper around `HashMap<TypeId, Box<Any>>`, with the portions that
-/// would be memory-unsafe removed or marked unsafe. Normal people are expected to use the safe
-/// `Map` interface instead, but there is the occasional use for this such as iteration over the
-/// contents of an `Map`. However, because you will then be dealing with `Any` trait objects, it
+/// At its essence, this is a wrapper around `HashMap<TypeId, Box<Any>>`, with
+/// the portions that would be memory-unsafe removed or marked unsafe. Normal
+/// people are expected to use the safe `Map` interface instead, but there is
+/// the occasional use for this such as iteration over the contents of an `Map`.
+/// However, because you will then be dealing with `Any` trait objects, it
 /// doesn’t tend to be so very useful. Still, if you need it, it’s here.
 #[derive(Debug)]
 pub struct RawMap<A: ?Sized + UncheckedAnyExt = dyn Any> {
     inner: HashMap<TypeId, Box<A>, BuildHasherDefault<TypeIdHasher>>,
 }
 
-// #[derive(Clone)] would want A to implement Clone, but in reality it’s only Box<A> that can.
+// #[derive(Clone)] would want A to implement Clone, but in reality it’s only
+// Box<A> that can.
 impl<A: ?Sized + UncheckedAnyExt> Clone for RawMap<A>
 where
     Box<A>: Clone,
@@ -94,10 +98,12 @@ pub struct Iter<'a, A: ?Sized + UncheckedAnyExt> {
 }
 impl<'a, A: ?Sized + UncheckedAnyExt> Iterator for Iter<'a, A> {
     type Item = &'a A;
+
     #[inline]
     fn next(&mut self) -> Option<&'a A> {
         self.inner.next().map(|x| &**x.1)
     }
+
     #[inline]
     fn size_hint(&self) -> (usize, Option<usize>) {
         self.inner.size_hint()
@@ -116,10 +122,12 @@ pub struct IterMut<'a, A: ?Sized + UncheckedAnyExt> {
 }
 impl<'a, A: ?Sized + UncheckedAnyExt> Iterator for IterMut<'a, A> {
     type Item = &'a mut A;
+
     #[inline]
     fn next(&mut self) -> Option<&'a mut A> {
         self.inner.next().map(|x| &mut **x.1)
     }
+
     #[inline]
     fn size_hint(&self) -> (usize, Option<usize>) {
         self.inner.size_hint()
@@ -138,10 +146,12 @@ pub struct IntoIter<A: ?Sized + UncheckedAnyExt> {
 }
 impl<A: ?Sized + UncheckedAnyExt> Iterator for IntoIter<A> {
     type Item = Box<A>;
+
     #[inline]
     fn next(&mut self) -> Option<Box<A>> {
         self.inner.next().map(|x| x.1)
     }
+
     #[inline]
     fn size_hint(&self) -> (usize, Option<usize>) {
         self.inner.size_hint()
@@ -160,10 +170,12 @@ pub struct Drain<'a, A: ?Sized + UncheckedAnyExt> {
 }
 impl<'a, A: ?Sized + UncheckedAnyExt> Iterator for Drain<'a, A> {
     type Item = Box<A>;
+
     #[inline]
     fn next(&mut self) -> Option<Box<A>> {
         self.inner.next().map(|x| x.1)
     }
+
     #[inline]
     fn size_hint(&self) -> (usize, Option<usize>) {
         self.inner.size_hint()
@@ -209,7 +221,8 @@ impl<A: ?Sized + UncheckedAnyExt> RawMap<A> {
         }
     }
 
-    /// Gets the entry for the given type in the collection for in-place manipulation.
+    /// Gets the entry for the given type in the collection for in-place
+    /// manipulation.
     #[inline]
     pub fn entry(&mut self, key: TypeId) -> Entry<A> {
         match self.inner.entry(key) {
@@ -220,8 +233,8 @@ impl<A: ?Sized + UncheckedAnyExt> RawMap<A> {
 
     /// Returns a reference to the value corresponding to the key.
     ///
-    /// The key may be any borrowed form of the map's key type, but `Hash` and `Eq` on the borrowed
-    /// form *must* match those for the key type.
+    /// The key may be any borrowed form of the map's key type, but `Hash` and
+    /// `Eq` on the borrowed form *must* match those for the key type.
     #[inline]
     pub fn get<Q: ?Sized>(&self, k: &Q) -> Option<&A>
     where
@@ -233,8 +246,8 @@ impl<A: ?Sized + UncheckedAnyExt> RawMap<A> {
 
     /// Returns true if the map contains a value for the specified key.
     ///
-    /// The key may be any borrowed form of the map's key type, but `Hash` and `Eq` on the borrowed
-    /// form *must* match those for the key type.
+    /// The key may be any borrowed form of the map's key type, but `Hash` and
+    /// `Eq` on the borrowed form *must* match those for the key type.
     #[inline]
     pub fn contains_key<Q: ?Sized>(&self, k: &Q) -> bool
     where
@@ -246,8 +259,8 @@ impl<A: ?Sized + UncheckedAnyExt> RawMap<A> {
 
     /// Returns a mutable reference to the value corresponding to the key.
     ///
-    /// The key may be any borrowed form of the map's key type, but `Hash` and `Eq` on the borrowed
-    /// form *must* match those for the key type.
+    /// The key may be any borrowed form of the map's key type, but `Hash` and
+    /// `Eq` on the borrowed form *must* match those for the key type.
     #[inline]
     pub fn get_mut<Q: ?Sized>(&mut self, k: &Q) -> Option<&mut A>
     where
@@ -257,21 +270,23 @@ impl<A: ?Sized + UncheckedAnyExt> RawMap<A> {
         self.inner.get_mut(k).map(|x| &mut **x)
     }
 
-    /// Inserts a key-value pair from the map. If the key already had a value present in the map,
-    /// that value is returned. Otherwise, None is returned.
+    /// Inserts a key-value pair from the map. If the key already had a value
+    /// present in the map, that value is returned. Otherwise, None is
+    /// returned.
     ///
-    /// It is the caller’s responsibility to ensure that the key corresponds with the type ID of
-    /// the value. If they do not, memory safety may be violated.
+    /// It is the caller’s responsibility to ensure that the key corresponds
+    /// with the type ID of the value. If they do not, memory safety may be
+    /// violated.
     #[inline]
     pub unsafe fn insert(&mut self, key: TypeId, value: Box<A>) -> Option<Box<A>> {
         self.inner.insert(key, value)
     }
 
-    /// Removes a key from the map, returning the value at the key if the key was previously in the
-    /// map.
+    /// Removes a key from the map, returning the value at the key if the key
+    /// was previously in the map.
     ///
-    /// The key may be any borrowed form of the map's key type, but `Hash` and `Eq` on the borrowed
-    /// form *must* match those for the key type.
+    /// The key may be any borrowed form of the map's key type, but `Hash` and
+    /// `Eq` on the borrowed form *must* match those for the key type.
     #[inline]
     pub fn remove<Q: ?Sized>(&mut self, k: &Q) -> Option<Box<A>>
     where
@@ -307,8 +322,8 @@ where
 }
 
 impl<A: ?Sized + UncheckedAnyExt> IntoIterator for RawMap<A> {
-    type Item = Box<A>;
     type IntoIter = IntoIter<A>;
+    type Item = Box<A>;
 
     #[inline]
     fn into_iter(self) -> IntoIter<A> {
@@ -328,7 +343,8 @@ pub struct VacantEntry<'a, A: ?Sized + UncheckedAnyExt> {
     inner: hash_map::VacantEntry<'a, TypeId, Box<A>>,
 }
 
-/// A view into a single location in a `RawMap`, which may be vacant or occupied.
+/// A view into a single location in a `RawMap`, which may be vacant or
+/// occupied.
 pub enum Entry<'a, A: ?Sized + UncheckedAnyExt> {
     /// An occupied Entry
     Occupied(OccupiedEntry<'a, A>),
@@ -337,11 +353,12 @@ pub enum Entry<'a, A: ?Sized + UncheckedAnyExt> {
 }
 
 impl<'a, A: ?Sized + UncheckedAnyExt> Entry<'a, A> {
-    /// Ensures a value is in the entry by inserting the default if empty, and returns
-    /// a mutable reference to the value in the entry.
+    /// Ensures a value is in the entry by inserting the default if empty, and
+    /// returns a mutable reference to the value in the entry.
     ///
-    /// It is the caller’s responsibility to ensure that the key of the entry corresponds with
-    /// the type ID of `value`. If they do not, memory safety may be violated.
+    /// It is the caller’s responsibility to ensure that the key of the entry
+    /// corresponds with the type ID of `value`. If they do not, memory
+    /// safety may be violated.
     #[inline]
     pub unsafe fn or_insert(self, default: Box<A>) -> &'a mut A {
         match self {
@@ -350,11 +367,13 @@ impl<'a, A: ?Sized + UncheckedAnyExt> Entry<'a, A> {
         }
     }
 
-    /// Ensures a value is in the entry by inserting the result of the default function if empty,
-    /// and returns a mutable reference to the value in the entry.
+    /// Ensures a value is in the entry by inserting the result of the default
+    /// function if empty, and returns a mutable reference to the value in
+    /// the entry.
     ///
-    /// It is the caller’s responsibility to ensure that the key of the entry corresponds with
-    /// the type ID of `value`. If they do not, memory safety may be violated.
+    /// It is the caller’s responsibility to ensure that the key of the entry
+    /// corresponds with the type ID of `value`. If they do not, memory
+    /// safety may be violated.
     #[inline]
     pub unsafe fn or_insert_with<F: FnOnce() -> Box<A>>(self, default: F) -> &'a mut A {
         match self {
@@ -377,8 +396,8 @@ impl<'a, A: ?Sized + UncheckedAnyExt> OccupiedEntry<'a, A> {
         &mut **self.inner.get_mut()
     }
 
-    /// Converts the OccupiedEntry into a mutable reference to the value in the entry
-    /// with a lifetime bound to the collection itself.
+    /// Converts the OccupiedEntry into a mutable reference to the value in the
+    /// entry with a lifetime bound to the collection itself.
     #[inline]
     pub fn into_mut(self) -> &'a mut A {
         &mut **self.inner.into_mut()
@@ -386,8 +405,9 @@ impl<'a, A: ?Sized + UncheckedAnyExt> OccupiedEntry<'a, A> {
 
     /// Sets the value of the entry, and returns the entry's old value.
     ///
-    /// It is the caller’s responsibility to ensure that the key of the entry corresponds with
-    /// the type ID of `value`. If they do not, memory safety may be violated.
+    /// It is the caller’s responsibility to ensure that the key of the entry
+    /// corresponds with the type ID of `value`. If they do not, memory
+    /// safety may be violated.
     #[inline]
     pub unsafe fn insert(&mut self, value: Box<A>) -> Box<A> {
         self.inner.insert(value)
@@ -404,8 +424,9 @@ impl<'a, A: ?Sized + UncheckedAnyExt> VacantEntry<'a, A> {
     /// Sets the value of the entry with the VacantEntry's key,
     /// and returns a mutable reference to it
     ///
-    /// It is the caller’s responsibility to ensure that the key of the entry corresponds with
-    /// the type ID of `value`. If they do not, memory safety may be violated.
+    /// It is the caller’s responsibility to ensure that the key of the entry
+    /// corresponds with the type ID of `value`. If they do not, memory
+    /// safety may be violated.
     #[inline]
     pub unsafe fn insert(self, value: Box<A>) -> &'a mut A {
         &mut **self.inner.insert(value)
