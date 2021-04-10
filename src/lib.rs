@@ -1,12 +1,16 @@
-//! This crate provides the `AnyMap` type, a safe and convenient store for one value of each type.
+//! This crate provides the `AnyMap` type, a safe and convenient store for one
+//! value of each type.
 
 #![warn(missing_docs, unused_results)]
-//#![deny(warnings)]
-use std::any::TypeId;
-use std::marker::PhantomData;
+#![allow(unused_doc_comments)]
 
-use crate::raw::RawMap;
-use crate::any::{UncheckedAnyExt, IntoBox, Any};
+//#![deny(warnings)]
+use std::{any::TypeId, marker::PhantomData};
+
+use crate::{
+    any::{Any, IntoBox, UncheckedAnyExt},
+    raw::RawMap,
+};
 
 macro_rules! impl_common_methods {
     (
@@ -18,9 +22,7 @@ macro_rules! impl_common_methods {
             /// Create an empty collection.
             #[inline]
             pub fn new() -> $t<A> {
-                $t {
-                    $field: $new,
-                }
+                $t { $field: $new }
             }
 
             /// Creates an empty collection with the given initial capacity.
@@ -31,7 +33,8 @@ macro_rules! impl_common_methods {
                 }
             }
 
-            /// Returns the number of elements the collection can hold without reallocating.
+            /// Returns the number of elements the collection can hold without
+            /// reallocating.
             #[inline]
             pub fn capacity(&self) -> usize {
                 self.$field.capacity()
@@ -69,7 +72,8 @@ macro_rules! impl_common_methods {
                 self.$field.is_empty()
             }
 
-            /// Removes all items from the collection. Keeps the allocated memory for reuse.
+            /// Removes all items from the collection. Keeps the allocated memory for
+            /// reuse.
             #[inline]
             pub fn clear(&mut self) {
                 self.$field.clear()
@@ -82,23 +86,25 @@ macro_rules! impl_common_methods {
                 $t::new()
             }
         }
-    }
+    };
 }
 
 pub mod any;
 pub mod raw;
 
-/// A collection containing zero or one values for any given type and allowing convenient,
-/// type-safe access to those values.
+/// A collection containing zero or one values for any given type and allowing
+/// convenient, type-safe access to those values.
 ///
-/// The type parameter `A` allows you to use a different value type; normally you will want it to
-/// be `anymap::any::Any`, but there are other choices:
+/// The type parameter `A` allows you to use a different value type; normally
+/// you will want it to be `anymap::any::Any`, but there are other choices:
 ///
-/// - If you want the entire map to be cloneable, use `CloneAny` instead of `Any`.
-/// - You can add on `+ Send` and/or `+ Sync` (e.g. `Map<Any + Send>`) to add those bounds.
+/// - If you want the entire map to be cloneable, use `CloneAny` instead of
+///   `Any`.
+/// - You can add on `+ Send` and/or `+ Sync` (e.g. `Map<Any + Send>`) to add
+///   those bounds.
 ///
 /// ```rust
-/// # use anymap::AnyMap;
+/// # use anymap2::AnyMap;
 /// let mut data = AnyMap::new();
 /// assert_eq!(data.get(), None::<&i32>);
 /// data.insert(42i32);
@@ -112,8 +118,15 @@ pub mod raw;
 /// }
 ///
 /// assert_eq!(data.get::<Foo>(), None);
-/// data.insert(Foo { str: format!("foo") });
-/// assert_eq!(data.get(), Some(&Foo { str: format!("foo") }));
+/// data.insert(Foo {
+///     str: format!("foo"),
+/// });
+/// assert_eq!(
+///     data.get(),
+///     Some(&Foo {
+///         str: format!("foo")
+///     })
+/// );
 /// data.get_mut::<Foo>().map(|foo| foo.str.push('t'));
 /// assert_eq!(&*data.get::<Foo>().unwrap().str, "foot");
 /// ```
@@ -124,8 +137,12 @@ pub struct Map<A: ?Sized + UncheckedAnyExt = dyn Any> {
     raw: RawMap<A>,
 }
 
-// #[derive(Clone)] would want A to implement Clone, but in reality it’s only Box<A> that can.
-impl<A: ?Sized + UncheckedAnyExt> Clone for Map<A> where Box<A>: Clone {
+// #[derive(Clone)] would want A to implement Clone, but in reality it’s only
+// Box<A> that can.
+impl<A: ?Sized + UncheckedAnyExt> Clone for Map<A>
+where
+    Box<A>: Clone,
+{
     #[inline]
     fn clone(&self) -> Map<A> {
         Map {
@@ -136,9 +153,10 @@ impl<A: ?Sized + UncheckedAnyExt> Clone for Map<A> where Box<A>: Clone {
 
 /// The most common type of `Map`: just using `Any`.
 ///
-/// Why is this a separate type alias rather than a default value for `Map<A>`? `Map::new()`
-/// doesn’t seem to be happy to infer that it should go with the default value.
-/// It’s a bit sad, really. Ah well, I guess this approach will do.
+/// Why is this a separate type alias rather than a default value for `Map<A>`?
+/// `Map::new()` doesn’t seem to be happy to infer that it should go with the
+/// default value. It’s a bit sad, really. Ah well, I guess this approach will
+/// do.
 pub type AnyMap = Map<dyn Any>;
 
 /// Sync version
@@ -151,28 +169,32 @@ impl_common_methods! {
 }
 
 impl<A: ?Sized + UncheckedAnyExt> Map<A> {
-    /// Returns a reference to the value stored in the collection for the type `T`, if it exists.
+    /// Returns a reference to the value stored in the collection for the type
+    /// `T`, if it exists.
     #[inline]
     pub fn get<T: IntoBox<A>>(&self) -> Option<&T> {
-        self.raw.get(&TypeId::of::<T>())
+        self.raw
+            .get(&TypeId::of::<T>())
             .map(|any| unsafe { any.downcast_ref_unchecked::<T>() })
     }
 
-    /// Returns a mutable reference to the value stored in the collection for the type `T`,
-    /// if it exists.
+    /// Returns a mutable reference to the value stored in the collection for
+    /// the type `T`, if it exists.
     #[inline]
     pub fn get_mut<T: IntoBox<A>>(&mut self) -> Option<&mut T> {
-        self.raw.get_mut(&TypeId::of::<T>())
+        self.raw
+            .get_mut(&TypeId::of::<T>())
             .map(|any| unsafe { any.downcast_mut_unchecked::<T>() })
     }
 
     /// Sets the value stored in the collection for the type `T`.
-    /// If the collection already had a value of type `T`, that value is returned.
-    /// Otherwise, `None` is returned.
+    /// If the collection already had a value of type `T`, that value is
+    /// returned. Otherwise, `None` is returned.
     #[inline]
     pub fn insert<T: IntoBox<A>>(&mut self, value: T) -> Option<T> {
         unsafe {
-            self.raw.insert(TypeId::of::<T>(), value.into_box())
+            self.raw
+                .insert(TypeId::of::<T>(), value.into_box())
                 .map(|any| *any.downcast_unchecked::<T>())
         }
     }
@@ -181,7 +203,8 @@ impl<A: ?Sized + UncheckedAnyExt> Map<A> {
     /// returning it if there was one or `None` if there was not.
     #[inline]
     pub fn remove<T: IntoBox<A>>(&mut self) -> Option<T> {
-        self.raw.remove(&TypeId::of::<T>())
+        self.raw
+            .remove(&TypeId::of::<T>())
             .map(|any| *unsafe { any.downcast_unchecked::<T>() })
     }
 
@@ -191,7 +214,8 @@ impl<A: ?Sized + UncheckedAnyExt> Map<A> {
         self.raw.contains_key(&TypeId::of::<T>())
     }
 
-    /// Gets the entry for the given type in the collection for in-place manipulation
+    /// Gets the entry for the given type in the collection for in-place
+    /// manipulation
     #[inline]
     pub fn entry<T: IntoBox<A>>(&mut self) -> Entry<A, T> {
         match self.raw.entry(TypeId::of::<T>()) {
@@ -221,10 +245,10 @@ impl<A: ?Sized + UncheckedAnyExt> AsMut<RawMap<A>> for Map<A> {
     }
 }
 
-impl<A: ?Sized + UncheckedAnyExt> Into<RawMap<A>> for Map<A> {
+impl<A: ?Sized + UncheckedAnyExt> From<Map<A>> for RawMap<A> {
     #[inline]
-    fn into(self) -> RawMap<A> {
-        self.raw
+    fn from(map: Map<A>) -> Self {
+        map.raw
     }
 }
 
@@ -249,8 +273,8 @@ pub enum Entry<'a, A: ?Sized + UncheckedAnyExt, V: 'a> {
 }
 
 impl<'a, A: ?Sized + UncheckedAnyExt, V: IntoBox<A>> Entry<'a, A, V> {
-    /// Ensures a value is in the entry by inserting the default if empty, and returns
-    /// a mutable reference to the value in the entry.
+    /// Ensures a value is in the entry by inserting the default if empty, and
+    /// returns a mutable reference to the value in the entry.
     #[inline]
     pub fn or_insert(self, default: V) -> &'a mut V {
         match self {
@@ -259,8 +283,9 @@ impl<'a, A: ?Sized + UncheckedAnyExt, V: IntoBox<A>> Entry<'a, A, V> {
         }
     }
 
-    /// Ensures a value is in the entry by inserting the result of the default function if empty,
-    /// and returns a mutable reference to the value in the entry.
+    /// Ensures a value is in the entry by inserting the result of the default
+    /// function if empty, and returns a mutable reference to the value in
+    /// the entry.
     #[inline]
     pub fn or_insert_with<F: FnOnce() -> V>(self, default: F) -> &'a mut V {
         match self {
@@ -277,7 +302,7 @@ impl<'a, A: ?Sized + UncheckedAnyExt, V: Default + IntoBox<A>> Entry<'a, A, V> {
     /// # Examples
     ///
     /// ```
-    /// # use anymap::AnyMap;
+    /// # use anymap2::AnyMap;
     /// let mut data = AnyMap::new();
     /// {
     ///     let r = data.entry::<i32>().or_default();
@@ -308,8 +333,8 @@ impl<'a, A: ?Sized + UncheckedAnyExt, V: IntoBox<A>> OccupiedEntry<'a, A, V> {
         unsafe { self.inner.get_mut().downcast_mut_unchecked() }
     }
 
-    /// Converts the OccupiedEntry into a mutable reference to the value in the entry
-    /// with a lifetime bound to the collection itself
+    /// Converts the OccupiedEntry into a mutable reference to the value in the
+    /// entry with a lifetime bound to the collection itself
     #[inline]
     pub fn into_mut(self) -> &'a mut V {
         unsafe { self.inner.into_mut().downcast_mut_unchecked() }
@@ -339,16 +364,25 @@ impl<'a, A: ?Sized + UncheckedAnyExt, V: IntoBox<A>> VacantEntry<'a, A, V> {
 
 #[cfg(test)]
 mod tests {
-    use crate::{Map, AnyMap, Entry};
-    use crate::any::{Any, CloneAny};
+    use crate::{
+        any::{Any, CloneAny, CloneAnySend, CloneAnySendSync, CloneAnySync},
+        AnyMap, Entry, Map,
+    };
 
-    #[derive(Clone, Debug, PartialEq)] struct A(i32);
-    #[derive(Clone, Debug, PartialEq)] struct B(i32);
-    #[derive(Clone, Debug, PartialEq)] struct C(i32);
-    #[derive(Clone, Debug, PartialEq)] struct D(i32);
-    #[derive(Clone, Debug, PartialEq)] struct E(i32);
-    #[derive(Clone, Debug, PartialEq)] struct F(i32);
-    #[derive(Clone, Debug, PartialEq)] struct J(i32);
+    #[derive(Clone, Debug, PartialEq)]
+    struct A(i32);
+    #[derive(Clone, Debug, PartialEq)]
+    struct B(i32);
+    #[derive(Clone, Debug, PartialEq)]
+    struct C(i32);
+    #[derive(Clone, Debug, PartialEq)]
+    struct D(i32);
+    #[derive(Clone, Debug, PartialEq)]
+    struct E(i32);
+    #[derive(Clone, Debug, PartialEq)]
+    struct F(i32);
+    #[derive(Clone, Debug, PartialEq)]
+    struct J(i32);
 
     macro_rules! test_entry {
         ($name:ident, $init:ty) => {
@@ -373,7 +407,6 @@ mod tests {
                 assert_eq!(map.get::<A>().unwrap(), &A(100));
                 assert_eq!(map.len(), 6);
 
-
                 // Existing key (update)
                 match map.entry::<B>() {
                     Entry::Vacant(_) => unreachable!(),
@@ -386,7 +419,6 @@ mod tests {
                 assert_eq!(map.get::<B>().unwrap(), &B(200));
                 assert_eq!(map.len(), 6);
 
-
                 // Existing key (remove)
                 match map.entry::<C>() {
                     Entry::Vacant(_) => unreachable!(),
@@ -396,7 +428,6 @@ mod tests {
                 }
                 assert_eq!(map.get::<C>(), None);
                 assert_eq!(map.len(), 5);
-
 
                 // Inexistent key (insert)
                 match map.entry::<J>() {
@@ -418,7 +449,7 @@ mod tests {
                 assert_eq!(map.get::<C>().unwrap(), &C(301));
                 assert_eq!(map.len(), 7);
             }
-        }
+        };
     }
 
     test_entry!(test_entry_any, AnyMap);
@@ -452,10 +483,10 @@ mod tests {
 
     #[test]
     fn test_varieties() {
-        fn assert_send<T: Send>() { }
-        fn assert_sync<T: Sync>() { }
-        fn assert_clone<T: Clone>() { }
-        fn assert_debug<T: ::std::fmt::Debug>() { }
+        fn assert_send<T: Send>() {}
+        fn assert_sync<T: Sync>() {}
+        fn assert_clone<T: Clone>() {}
+        fn assert_debug<T: ::std::fmt::Debug>() {}
         assert_send::<Map<dyn Any + Send>>();
         assert_send::<Map<dyn Any + Send + Sync>>();
         assert_sync::<Map<dyn Any + Sync>>();
@@ -464,17 +495,17 @@ mod tests {
         assert_debug::<Map<dyn Any + Send>>();
         assert_debug::<Map<dyn Any + Sync>>();
         assert_debug::<Map<dyn Any + Send + Sync>>();
-        assert_send::<Map<dyn CloneAny + Send>>();
-        assert_send::<Map<dyn CloneAny + Send + Sync>>();
-        assert_sync::<Map<dyn CloneAny + Sync>>();
-        assert_sync::<Map<dyn CloneAny + Send + Sync>>();
-        assert_clone::<Map<dyn CloneAny + Send>>();
-        assert_clone::<Map<dyn CloneAny + Send + Sync>>();
-        assert_clone::<Map<dyn CloneAny + Sync>>();
-        assert_clone::<Map<dyn CloneAny + Send + Sync>>();
+        assert_send::<Map<dyn CloneAnySend + Send>>();
+        assert_send::<Map<dyn CloneAnySendSync + Send + Sync>>();
+        assert_sync::<Map<dyn CloneAnySync + Sync>>();
+        assert_sync::<Map<dyn CloneAnySendSync + Send + Sync>>();
+        assert_clone::<Map<dyn CloneAnySend + Send>>();
+        assert_clone::<Map<dyn CloneAnySendSync + Send + Sync>>();
+        assert_clone::<Map<dyn CloneAnySync + Sync>>();
+        assert_clone::<Map<dyn CloneAnySendSync + Send + Sync>>();
         assert_debug::<Map<dyn CloneAny>>();
-        assert_debug::<Map<dyn CloneAny + Send>>();
-        assert_debug::<Map<dyn CloneAny + Sync>>();
-        assert_debug::<Map<dyn CloneAny + Send + Sync>>();
+        assert_debug::<Map<dyn CloneAnySend + Send>>();
+        assert_debug::<Map<dyn CloneAnySync + Sync>>();
+        assert_debug::<Map<dyn CloneAnySendSync + Send + Sync>>();
     }
 }
